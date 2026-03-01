@@ -17,7 +17,6 @@ username_field = User.USERNAME_FIELD
 
 
 class TerminalView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
-
     def test_func(self):
         super_user_required = getattr(
             settings, "DJANGO_ADMIN_SHELLX_SUPERUSER_ONLY", True
@@ -108,7 +107,8 @@ def toggle_favorite(request, pk):
         color = "text-yellow-400" if instance.favorite else ""
         return HttpResponse(
             format_html(  # pyright: ignore [reportArgumentType]
-                "<div class='tooltip' data-tip='Favorite Command'><i class='fa fa-star {}'></i></div>",
+                "<div class='tooltip' data-tip='Favorite Command'>"
+                "<i class='fa fa-star {}'></i></div>",
                 mark_safe(color),
             )
         )
