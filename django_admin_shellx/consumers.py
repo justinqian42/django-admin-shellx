@@ -16,7 +16,6 @@ from channels.generic.websocket import WebsocketConsumer
 from django.apps import apps
 from django.conf import settings
 from django.contrib.admin.models import CHANGE, LogEntry
-from django.contrib.contenttypes.models import ContentType
 
 from .models import TerminalCommand
 
@@ -73,8 +72,8 @@ class TerminalConsumer(WebsocketConsumer):
             self.child_pid = proc.pid
             proc.wait()
 
-            # Subprocess has finished, close the websocket
-            # happens when process exits, either via user exiting using exit() or by error
+            # Subprocess has finished, close the websocket when the process
+            # exits, either by using exit() or by failing.
             self.subprocess = None
             self.child_pid = None
             if self.connected:
@@ -83,7 +82,7 @@ class TerminalConsumer(WebsocketConsumer):
 
     def connect(self):
 
-        if not "user" in self.scope:
+        if "user" not in self.scope:
             self.close(4401)
             return
 
@@ -192,13 +191,12 @@ class TerminalConsumer(WebsocketConsumer):
         tc.save()
 
         # Create a log entry for the command
-        LogEntry.objects.log_action(
+        LogEntry.objects.log_actions(
             user_id=self.user.id,
-            content_type_id=ContentType.objects.get_for_model(tc).pk,
-            object_id=tc.id,
-            object_repr=str(tc),
+            queryset=TerminalCommand.objects.filter(pk=tc.pk),
             action_flag=CHANGE,
             change_message={"changed": {"name": "action", "object": tc.command}},
+            single_object=True,
         )
 
     def receive(self, text_data=None, bytes_data=None):

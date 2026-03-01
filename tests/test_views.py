@@ -115,7 +115,54 @@ def test_toggle_favorite_anonymous(client):
     )
 
     assert res.status_code == 302
-    assert (
-        res.url
-        == "/admin/login/?next=/admin/django_admin_shellx/terminalcommand/toggle_favorite/1/"
+    expected_url = (
+        "/admin/login/?next=/admin/django_admin_shellx/terminalcommand/"
+        f"toggle_favorite/{tc.id}/"
     )
+    assert res.url == expected_url
+
+
+def test_toggle_favorite_post_does_not_change_value(admin_client):
+    tc = TerminalCommandFactory(favorite=False)
+    res = admin_client.post(
+        reverse(
+            "admin:django_admin_shellx_terminalcommand_toggle_favorite",
+            kwargs={"pk": tc.id},
+        )
+    )
+
+    assert res.status_code == 200
+    assert res.json() == {
+        "status": "error",
+        "message": "Only GET requests are allowed",
+    }
+    tc.refresh_from_db()
+    assert not tc.favorite
+
+
+def test_staff_user_allowed_when_superuser_not_required(settings, user_client):
+    settings.DJANGO_ADMIN_SHELLX_SUPERUSER_ONLY = False
+    user_client.user.is_staff = True
+    user_client.user.save()
+
+    tc = TerminalCommandFactory(favorite=False)
+    res = user_client.get(
+        reverse(
+            "admin:django_admin_shellx_terminalcommand_toggle_favorite",
+            kwargs={"pk": tc.id},
+        )
+    )
+
+    assert res.status_code == 200
+    tc.refresh_from_db()
+    assert tc.favorite
+
+
+def test_admin_index_contains_terminal_link(admin_client):
+    res = admin_client.get(reverse("admin:index"))
+
+    assert res.status_code == 200
+    terminal_url = reverse("admin:django_admin_shellx_terminalcommand_terminal")
+    content = res.content.decode()
+    assert "Terminal" in content
+    assert terminal_url in content

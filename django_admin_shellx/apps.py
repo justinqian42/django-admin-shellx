@@ -1,3 +1,5 @@
+import importlib
+
 from django.apps import AppConfig
 
 
@@ -7,7 +9,6 @@ class DjangoAdminShellX(AppConfig):
 
     def ready(self):
         try:
-            # pylint: disable=unused-import, import-outside-toplevel
-            import django_admin_shellx.signals
+            importlib.import_module("django_admin_shellx.signals")
         except ImportError:
             pass
